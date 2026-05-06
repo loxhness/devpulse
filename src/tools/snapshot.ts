@@ -40,34 +40,6 @@ export interface SessionSnapshot {
 
 export async function getSessionSnapshot(cwd: string): Promise<SessionSnapshot> {
   const baseProject = path.basename(cwd);
-  const fallback: SessionSnapshot = {
-    diagnosis: {
-      health: "degraded",
-      primary_issue: "Unable to determine environment state",
-      secondary_signals: [],
-      suggested_action: "Try running get_session_snapshot again",
-      confidence: "low",
-    },
-    session: {
-      project: baseProject,
-      framework: "unknown",
-      branch: null,
-      uncommitted_files: 0,
-      last_commit: null,
-    },
-    services: {
-      running: [],
-      expected_but_missing: [],
-    },
-    recent_errors: [],
-    env: {
-      node: null,
-      python: null,
-      go: null,
-      package_manager: "unknown",
-    },
-  };
-
   try {
     const frameworkPromise = detectFramework(cwd);
     const runtimesPromise = detectRuntimes(cwd);
@@ -136,7 +108,7 @@ export async function getSessionSnapshot(cwd: string): Promise<SessionSnapshot> 
       framework: framework.framework,
     });
 
-    return {
+    const result: SessionSnapshot = {
       diagnosis,
       session: {
         project: baseProject,
@@ -164,7 +136,31 @@ export async function getSessionSnapshot(cwd: string): Promise<SessionSnapshot> 
         package_manager: runtimes.packageManager,
       },
     };
+    const json = JSON.stringify(result);
+    process.stderr.write(`devpulse snapshot size: ${json.length} bytes\n`);
+    return result;
   } catch {
-    return fallback;
+    const result: SessionSnapshot = {
+      diagnosis: {
+        health: "degraded",
+        primary_issue: "Unable to determine environment state",
+        secondary_signals: [],
+        suggested_action: "Try running get_session_snapshot again",
+        confidence: "low",
+      },
+      session: {
+        project: path.basename(cwd),
+        framework: "unknown",
+        branch: null,
+        uncommitted_files: 0,
+        last_commit: null,
+      },
+      services: { running: [], expected_but_missing: [] },
+      recent_errors: [],
+      env: { node: null, python: null, go: null, package_manager: "unknown" },
+    };
+    const json = JSON.stringify(result);
+    process.stderr.write(`devpulse snapshot size: ${json.length} bytes\n`);
+    return result;
   }
 }
