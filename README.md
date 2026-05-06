@@ -10,7 +10,7 @@ Zero-config MCP server that gives AI coding assistants a real-time diagnostic sn
 ### Claude Code
 
 ```bash
-claude mcp add devpulse -- npx -y devpulse
+claude mcp add devpulse -- npx -y devpulse-mcp
 ```
 
 ### Claude Desktop / Cursor / Windsurf
@@ -20,7 +20,7 @@ claude mcp add devpulse -- npx -y devpulse
   "mcpServers": {
     "devpulse": {
       "command": "npx",
-      "args": ["-y", "devpulse"]
+      "args": ["-y", "devpulse-mcp"]
     }
   }
 }
