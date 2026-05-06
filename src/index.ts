@@ -6,6 +6,10 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { detectFramework } from "./detectors/frameworks.js";
+import { getRecentErrors } from "./tools/errors.js";
+import { getRunningServices } from "./tools/processes.js";
+import { getSessionSnapshot } from "./tools/snapshot.js";
 
 const server = new Server(
   {
@@ -70,6 +74,93 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const toolName = request.params.name;
+
+  if (toolName === "get_session_snapshot") {
+    try {
+      const args = request.params.arguments as { cwd?: string } | undefined;
+      const cwd = args?.cwd ?? process.cwd();
+      const result = await getSessionSnapshot(cwd);
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              error: `Failed to get session snapshot: ${String(error)}`,
+            }),
+          },
+        ],
+      };
+    }
+  }
+
+  if (toolName === "get_recent_errors") {
+    try {
+      const args = request.params.arguments as
+        | { cwd?: string; limit?: number }
+        | undefined;
+      const cwd = args?.cwd ?? process.cwd();
+      const limit = args?.limit ?? 50;
+      const framework = await detectFramework(cwd);
+      const result = await getRecentErrors(cwd, framework.logPaths, limit);
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              error: `Failed to get recent errors: ${String(error)}`,
+            }),
+          },
+        ],
+      };
+    }
+  }
+
+  if (toolName === "get_running_services") {
+    try {
+      const args = request.params.arguments as { cwd?: string } | undefined;
+      const cwd = args?.cwd ?? process.cwd();
+      const framework = await detectFramework(cwd);
+      const result = await getRunningServices(framework.expectedPorts);
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              error: `Failed to get running services: ${String(error)}`,
+            }),
+          },
+        ],
+      };
+    }
+  }
+
   return {
     content: [
       {
